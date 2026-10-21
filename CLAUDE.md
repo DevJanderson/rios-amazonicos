@@ -51,7 +51,8 @@ Uso responsável: no máximo 1 requisição por hora por fonte, User-Agent
 identificado com link do repositório.
 
 Referências de Manaus (SGB): máxima 30,02 m (2021) | inundação 27,50 m |
-alerta de cheia 27,00 m | risco banho Ponta Negra 16,00 m | mínima 12,11 m (2024).
+alerta de cheia 27,00 m | inundação severa 29,00 m | risco banho Ponta Negra
+16,00 m | mínima 12,13 m (03/11/2024). Cotas das demais estações: `docs/dados.md`.
 
 ## Arquitetura
 
@@ -72,14 +73,21 @@ HidroWeb (carga)┘        de hora em hora, idempotente          │
   Host: `127.0.0.1:5432`; containers: `pg-projects:5432` na rede
   `pg-projects-net`. Nunca usar o Postgres interno do n8n.
 - Backup diário automático (`pg-projects-backup.timer`).
+- Três camadas (schemas), medalhão enxuto:
+  - `bruto`: resposta original de cada coleta (XML/HTML), retenção 90 dias.
+  - `dados`: `rios`, `estacoes`, `cotas_referencia`, `coletas`, `leituras`,
+    `inscritos`. Fonte da verdade.
+  - `analise`: views `ultima_leitura`, `leituras_diarias`, `situacao_estacao`,
+    `comparativo_anual`. Única camada lida pelo bot e pelo painel.
+- Regras: cota sempre em **cm**, fuso America/Manaus; `UNIQUE (estação,
+  instante, fonte)` + upsert; cada leitura aponta para sua coleta; qualidade
+  `ok`/`suspeita`/`corrigida` + motivo, nunca apagar o valor original; cotas de
+  referência são dados (tipo, valor, fonte, data), nunca constantes no código.
 - Um usuário por serviço, permissão mínima:
-  `coletor` (grava leituras/coletas), `n8n_rios` (lê + inscritos + marca
-  notificado), `painel` (só lê).
-- Tabelas: `rios`, `estacoes` (código ANA, cidade, rio, ordem no rio, cotas de
-  referência), `leituras` (estação + data/hora + cota em cm + fonte; única por
-  estação/instante/fonte), `inscritos` (chat + estações seguidas), `coletas`
-  (log por execução e fonte). Visão `leituras_diarias` (1 valor por
-  estação/dia) para bot e painel.
+  `coletor` (grava `bruto` e `dados`), `n8n_rios` (lê `analise`, grava
+  `inscritos`, marca notificado), `painel` (só lê `analise`).
+- Dicionário de dados: `docs/dados.md` (atualizar junto com qualquer mudança
+  de esquema).
 
 ## Ambiente (VPS nauraki)
 
@@ -107,7 +115,10 @@ rios-amazonicos/
 │   ├── notebooks/       # coleta.py e painel.py (marimo)
 │   └── tests/           # pytest + fixtures (XML da ANA, HTML do Porto)
 ├── n8n/                 # workflows exportados (JSON)
-└── docs/fases.md        # checklist das fases
+└── docs/
+    ├── PRD.md           # requisitos do produto
+    ├── dados.md         # dicionário de dados e cotas de referência
+    └── fases.md         # checklist das fases
 ```
 
 ## Fases

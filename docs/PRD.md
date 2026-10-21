@@ -27,7 +27,7 @@ como portfólio técnico (engenharia de dados, automação e integração).
 Na Amazônia, o rio dita a vida: transporte, abastecimento, pesca, comércio,
 escola e saúde dependem do nível da água. Cheias e secas extremas ficaram mais
 frequentes (cheia recorde de 2021 em Manaus com 30,02 m; seca recorde de 2024
-com 12,11 m).
+com 12,13 m).
 
 Hoje, quem quer acompanhar o nível dos rios enfrenta:
 
@@ -151,6 +151,10 @@ identificado com link do repositório, e citação das fontes no painel e no bot
 - RF11. Cadastro de rios e estações, com ordem no rio e cotas de referência.
 - RF12. Nova estação entra por cadastro, sem mudança de código.
 - RF13. Visão com um valor por estação por dia, para o bot e o painel.
+- RF13a. Guardar a resposta original de cada coleta (camada `bruto`) por 90 dias.
+- RF13b. Cotas de referência (cheia e seca) cadastradas com tipo, valor, fonte e data.
+- RF13c. Classificar a situação de cada estação (normal, atenção, alerta,
+  inundação, inundação severa, seca) a partir das cotas de referência.
 
 ### 9.4 Bot do Telegram (via n8n)
 
@@ -203,17 +207,31 @@ HidroWeb (carga)┘        de hora em hora, idempotente          │
 | Interface | Telegram | Consulta e notificações |
 | Painel | marimo | Visualização e auditoria |
 
-### Modelo de dados (conceitual)
+### Organização dos dados: 3 camadas
 
-- `rios` (id, nome)
-- `estacoes` (código ANA, cidade, UF, rio, ordem no rio, cotas de referência, ativa)
-- `leituras` (estação, data/hora, cota em cm, fonte, suspeita) — única por estação + instante + fonte
-- `coletas` (início, fim, fonte, status, nº de leituras, erro)
-- `inscritos` (chat do Telegram, estações acompanhadas, ativo, últimos alertas enviados)
-- `leituras_diarias` (visão: 1 valor por estação por dia)
+Versão enxuta da arquitetura medalhão, em três schemas do banco `rios`:
 
-Usuários do banco: `coletor` (grava), `n8n_rios` (lê + inscritos + marca
-notificado), `painel` (só lê).
+```
+fonte ─► bruto ─────────► dados ────────────► analise
+         (como chegou)    (limpo, tipado,     (views prontas para
+                           com qualidade)      bot e painel)
+```
+
+| Camada | Conteúdo | Para quê |
+|---|---|---|
+| `bruto` | Resposta original de cada coleta (XML da ANA, HTML do Porto), com data, URL e versão do parser; retenção de 90 dias | Reprocessar e auditar |
+| `dados` | `rios`, `estacoes`, `cotas_referencia`, `coletas`, `leituras`, `inscritos` | Fonte da verdade |
+| `analise` | Views: `ultima_leitura`, `leituras_diarias`, `situacao_estacao`, `comparativo_anual` | Consumo pelo bot e pelo painel |
+
+Princípios: rastreabilidade (cada leitura aponta para sua coleta e fonte),
+qualidade explícita (`ok`, `suspeita`, `corrigida` + motivo, sem apagar o
+original), cotas de referência como dados versionados com fonte, unidade única
+(cm, fuso America/Manaus) e idempotência (`UNIQUE` estação + instante + fonte).
+
+Dicionário de dados completo: [`docs/dados.md`](dados.md).
+
+Usuários do banco: `coletor` (grava em `bruto` e `dados`), `n8n_rios` (lê
+`analise`, grava `inscritos` e marca notificado), `painel` (só lê `analise`).
 
 ## 12. Metodologia
 
@@ -273,12 +291,16 @@ notificado), `painel` (só lê).
 - A telemetria da ANA continua pública e sem autenticação.
 - O n8n segue com HTTPS público para webhooks do Telegram (`flow.nauraki.com`).
 - A instância `pg-projects` e o marimo seguem disponíveis na VPS.
-- Cotas de referência por estação serão obtidas dos boletins do SGB.
+- Cotas de referência por estação vêm dos boletins do SGB (levantamento inicial
+  em `docs/dados.md`).
 
 ## 17. Questões em aberto
 
-- Cotas de referência de cada uma das 10 estações (levantar nos boletins do SGB).
-- Leitura de Parintins (10 cm em 20/10/2026) e Tabatinga sem nível: validar.
+- Cotas de alerta/inundação ausentes para a maioria das estações do interior
+  (o SGB só publica para cidades com histórico de inundação urbana).
+- Cotas de seca (emergência) além de Tabatinga (1,50 m).
+- Data da máxima de Tabatinga (25/08/1999) a conferir na série da ANA.
+- Tabatinga com horário sem nível na telemetria: validar.
 - Horário do boletim diário.
 - Pedido de acesso à API do HidroWeb.
 - Destino do backup fora da VPS.
