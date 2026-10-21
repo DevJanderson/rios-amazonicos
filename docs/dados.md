@@ -21,12 +21,33 @@ fonte ─► bruto ─────────► dados ────────
 
 - **Cota em centímetros** (inteiro ou decimal), na régua da estação. Metros só na exibição.
 - **Datas/horas** em `timestamptz`; exibição no fuso `America/Manaus`.
+  - ANA publica em **horário de Brasília** (UTC−3): uma leitura de Manaus marcada
+    21:45 já estava disponível às 22:07 (UTC−3) de 20/10/2026.
+  - Porto publica só o dia; a leitura é gravada às 00:00 de Manaus daquele dia.
 - Cotas **negativas são válidas**: o zero da régua é arbitrário (ex.: Parintins −2,67 m em 2024).
 - **Fontes** (`fonte`): `ana_telemetria`, `porto_manaus`, `ana_hidroweb`.
 - **Qualidade** (`qualidade`): `ok`, `suspeita`, `corrigida`, sempre com `motivo` quando ≠ `ok`.
 - Nomes de tabelas e colunas em português, minúsculas, `snake_case`.
 
-## 3. Tabelas (planejado — Fase 1)
+## 3. Regras de limpeza (`coletor/rios/limpeza.py`)
+
+| Situação | Tratamento | Qualidade |
+|---|---|---|
+| Decimal com vírgula ("5,00") | Convertido normalmente | `ok` |
+| ANA sem nível | Descartada (nada a guardar) | — |
+| Mesma leitura em consultas sobrepostas | Mantida uma vez | `ok` |
+| ANA: valor que se afasta das duas vizinhas mais de 30 cm/h | Mantido e marcado | `suspeita` |
+| Mais de 3 m fora da máxima/mínima histórica | Mantido e marcado | `suspeita` |
+| Porto: dia repetido no lugar de um dia faltante (17, 19, 19, 20) | Primeiro vira o dia faltante | `corrigida` |
+| Porto: dia repetido sem correção possível | Fica o primeiro | `suspeita` |
+| Porto: cota que destoa dos dois dias vizinhos (> 60 cm) e a coluna "Encheu/Vazou" confirma outro valor | Corrigida para cota anterior + variação | `corrigida` |
+| Idem, mas a variação não confirma | Mantida e marcada | `suspeita` |
+| Dia ausente na tabela | Reportado como lacuna | — |
+
+O valor como publicado fica sempre em `cota_original`; leituras `suspeita`
+ficam fora das views da camada `analise`.
+
+## 4. Tabelas (planejado — Fase 1)
 
 ### `bruto.respostas`
 | Coluna | Tipo | Descrição |
@@ -108,7 +129,7 @@ Chave única: `(estacao, instante, fonte)`.
 | `situacao_estacao` | Classificação atual: normal, atenção, alerta, inundação, inundação severa, seca |
 | `comparativo_anual` | Mesmo dia em anos anteriores e nos anos extremos |
 
-## 4. Estações
+## 5. Estações
 
 | Rio | Ordem | Estação | Código ANA | UF |
 |---|---|---|---|---|
@@ -123,7 +144,7 @@ Chave única: `(estacao, instante, fonte)`.
 | Amazonas | 1 | Itacoatiara | 16030000 | AM |
 | Amazonas | 2 | Parintins | 16350002 | AM |
 
-## 5. Cotas de referência (levantamento de 20/10/2026, em metros)
+## 6. Cotas de referência (levantamento de 20/10/2026, em metros)
 
 | Estação | Atenção | Alerta | Inundação | Inund. severa | Máxima histórica | Mínima histórica |
 |---|---|---|---|---|---|---|

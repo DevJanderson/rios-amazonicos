@@ -5,7 +5,7 @@
 | 0 | Diagnóstico da VPS, estrutura, PRD, git | ✅ Concluída (20/10/2026) |
 | 1 | Banco: esquema, usuários, estações, testes de permissão | ✅ Concluída (20/10/2026) |
 | 2 | Coletores ANA e Porto (baixar e extrair) | ✅ Concluída (20/10/2026) |
-| 3 | Limpeza + testes automatizados dos parsers | ⬜ Pendente |
+| 3 | Limpeza + testes automatizados dos parsers | ✅ Concluída (20/10/2026) |
 | 4 | Gravação no banco + coleta de hora em hora + carga histórica | ⬜ Pendente |
 | 5 | Bot Telegram (/start, /nivel, /semana, /alertas, /parar) | ⬜ Pendente |
 | 6 | Boletim diário dos 4 rios com alertas de cota | ⬜ Pendente |
@@ -47,3 +47,19 @@
 - Fixtures reais: HTML do Porto (com os erros conhecidos de junho), XML da ANA
   de Manaus (88 leituras) e página 504; um XML sintético cobre nível vazio.
 - 36 testes passando (28 do banco + 8 de extração).
+
+## Fase 3 — registro
+
+- `coletor/rios/limpeza.py`: cota em cm (Decimal), fusos (ANA em horário de
+  Brasília, Porto às 00:00 de Manaus), qualidade `ok`/`corrigida`/`suspeita`
+  com motivo, valor publicado sempre preservado. Regras em `docs/dados.md` §3.
+- Casos reais do Porto resolvidos automaticamente: 06/06/2026 publicado 20.12 →
+  28.12 (confirmado pela coluna Encheu/Vazou e pelo dia seguinte); "19" repetido
+  → dia 18.
+- 57 testes passando (+21 de limpeza, com as amostras reais e casos montados).
+- Notebook `coleta.py` refeito com a skill `marimo-notebook`: origem
+  "Amostras salvas" (sem internet) ou "Ao vivo" (botão), indicadores de
+  qualidade, abas (situação atual, correções e suspeitas, Porto, coleta) e
+  conferência Porto × ANA em Manaus.
+- Coleta real (20/10/2026): 10 de 10 estações ok, 1.278 leituras limpas
+  (1.276 ok, 2 corrigidas).
