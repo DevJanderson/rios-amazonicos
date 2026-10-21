@@ -4,7 +4,7 @@
 |---|---|---|
 | 0 | Diagnóstico da VPS, estrutura, PRD, git | ✅ Concluída (20/10/2026) |
 | 1 | Banco: esquema, usuários, estações, testes de permissão | ✅ Concluída (20/10/2026) |
-| 2 | Coletores ANA e Porto (baixar e extrair) | ⬜ Pendente |
+| 2 | Coletores ANA e Porto (baixar e extrair) | ✅ Concluída (20/10/2026) |
 | 3 | Limpeza + testes automatizados dos parsers | ⬜ Pendente |
 | 4 | Gravação no banco + coleta de hora em hora + carga histórica | ⬜ Pendente |
 | 5 | Bot Telegram (/start, /nivel, /semana, /alertas, /parar) | ⬜ Pendente |
@@ -32,3 +32,18 @@
 - 28 testes (`coletor/tests/test_banco.py`): carga, permissões de cada usuário,
   upsert idempotente, classificação de situação, leituras suspeitas fora das views.
 - Backup diário do `pg-projects` já inclui o banco `rios` (conferido).
+
+## Fase 2 — registro
+
+- Pacote `rios.fontes`: `http` (User-Agent identificado, timeout 90 s), `ana`
+  (XML da telemetria) e `porto` (tabelas mensais do Porto de Manaus). Extração
+  devolve os valores **como publicados** (texto); a limpeza fica para a Fase 3.
+- `rios.banco` lê as estações ativas do banco (usuário `rios_coletor`); nada é gravado.
+- Notebook `coletor/notebooks/coleta.py`: no editor coleta só ao clicar; como
+  script (`uv run python notebooks/coleta.py`) coleta direto e imprime resumo.
+- Coleta real em 20/10/2026: 8 de 10 estações ok, Itacoatiara e Parintins com
+  HTTP 504 (ANA instável), sem interromper as demais; São Gabriel e Coari sem
+  nível no período; Porto: 173 linhas (mai–out/2026).
+- Fixtures reais: HTML do Porto (com os erros conhecidos de junho), XML da ANA
+  de Manaus (88 leituras) e página 504; um XML sintético cobre nível vazio.
+- 36 testes passando (28 do banco + 8 de extração).

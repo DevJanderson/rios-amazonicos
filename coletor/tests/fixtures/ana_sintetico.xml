@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SYNTHETIC: same structure as the real capture (ana_14990000_2026-10-20.xml),
+     built to cover cases not in it: empty <Nivel /> and rain value. -->
+<DataTable xmlns="http://MRCS/">
+  <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata"/>
+  <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+    <DocumentElement xmlns="">
+      <DadosHidrometereologicos diffgr:id="DadosHidrometereologicos1" msdata:rowOrder="0">
+        <CodEstacao>14990000</CodEstacao>
+        <DataHora>2026-10-20 20:45:00  </DataHora>
+        <Vazao />
+        <Nivel>1703.00</Nivel>
+        <Chuva />
+      </DadosHidrometereologicos>
+      <DadosHidrometereologicos diffgr:id="DadosHidrometereologicos2" msdata:rowOrder="1">
+        <CodEstacao>14990000</CodEstacao>
+        <DataHora>2026-10-20 20:30:00  </DataHora>
+        <Vazao />
+        <Nivel />
+        <Chuva />
+      </DadosHidrometereologicos>
+      <DadosHidrometereologicos diffgr:id="DadosHidrometereologicos3" msdata:rowOrder="2">
+        <CodEstacao>14990000</CodEstacao>
+        <DataHora>2026-10-20 20:15:00  </DataHora>
+        <Vazao />
+        <Nivel>1704.00</Nivel>
+        <Chuva>0.00</Chuva>
+      </DadosHidrometereologicos>
+    </DocumentElement>
+  </diffgr:diffgram>
+</DataTable>

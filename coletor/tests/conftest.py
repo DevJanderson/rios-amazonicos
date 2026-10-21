@@ -1,12 +1,11 @@
 """Shared fixtures: database connections for each service user."""
 
 from collections.abc import Callable, Iterator
-from pathlib import Path
 
 import psycopg
 import pytest
 
-ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
+from rios.config import ENV_FILE, carregar_env
 
 USERS = {
     "rios_coletor": "RIOS_COLETOR_PASSWORD",
@@ -15,21 +14,11 @@ USERS = {
 }
 
 
-def load_env(path: Path) -> dict[str, str]:
-    env: dict[str, str] = {}
-    for line in path.read_text().splitlines():
-        line = line.strip()
-        if line and not line.startswith("#") and "=" in line:
-            key, value = line.split("=", 1)
-            env[key] = value
-    return env
-
-
 @pytest.fixture(scope="session")
 def env() -> dict[str, str]:
     if not ENV_FILE.exists():
         pytest.skip(f"{ENV_FILE} not found")
-    return load_env(ENV_FILE)
+    return carregar_env(ENV_FILE)
 
 
 Connect = Callable[[str], psycopg.Connection]
