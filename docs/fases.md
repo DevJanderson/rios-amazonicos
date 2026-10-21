@@ -6,7 +6,7 @@
 | 1 | Banco: esquema, usuários, estações, testes de permissão | ✅ Concluída (20/10/2026) |
 | 2 | Coletores ANA e Porto (baixar e extrair) | ✅ Concluída (20/10/2026) |
 | 3 | Limpeza + testes automatizados dos parsers | ✅ Concluída (20/10/2026) |
-| 4 | Gravação no banco + coleta de hora em hora + carga histórica | 🟡 Em andamento (carga histórica pendente) |
+| 4 | Gravação no banco + coleta de hora em hora + carga histórica | ✅ Concluída (21/10/2026) |
 | 5 | Bot Telegram (/start, /nivel, /semana, /alertas, /parar) | ⬜ Pendente |
 | 6 | Boletim diário dos 4 rios com alertas de cota | ⬜ Pendente |
 | 7 | Painel marimo (montante→jusante, comparação entre anos, log) | ⬜ Pendente |
@@ -64,7 +64,7 @@
 - Coleta real (20/10/2026): 10 de 10 estações ok, 1.278 leituras limpas
   (1.276 ok, 2 corrigidas).
 
-## Fase 4 — registro (parcial)
+## Fase 4 — registro
 
 - `rios/banco.py`: abre/fecha a coleta, guarda a resposta original (gzip) em
   `bruto.respostas`, faz upsert das leituras (conta só linhas novas ou alteradas)
@@ -80,4 +80,11 @@
 - Primeira coleta real gravada (20/10/2026): ANA 1.105 leituras, Porto 173;
   repetir não gravou nada novo. Banco com 8,7 MB.
 - 67 testes passando (+10 de coleta com HTTP falso e banco real, sem deixar dados).
-- Pendente: carga histórica da telemetria da ANA (disponível desde ~2011–2015).
+- Carga histórica (21/10/2026, 08:02–10:18): ANA de 01/01/2015 até hoje, todas
+  as leituras, pausa de 5 s, 1.400 consultas, 0 falhas. 1.918.971 leituras
+  gravadas (672 suspeitas, 531 delas em Humaitá). Banco com 459 MB.
+- Leituras por estação: Manaus 392 mil, Porto Velho 390 mil, Itacoatiara 368 mil,
+  Manacapuru 306 mil, Humaitá 208 mil, Barcelos 148 mil, Tabatinga 101 mil.
+- Telemetria quase vazia: Parintins (3,5 mil, desde 07/2020), Coari (2,1 mil,
+  09/2020–11/2024) e São Gabriel da Cachoeira (1,4 mil, 08/2020–11/2023).
+- Mínima de Manaus na telemetria: 12,11 m (a referência oficial é 12,13 m).
