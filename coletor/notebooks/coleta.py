@@ -14,183 +14,227 @@ def _():
 @app.cell
 def _(mo):
     mo.md(r"""
-    # Rios Amazônicos — coleta e limpeza
+    # Rios Amazônicos — coleta
 
-    Baixa as fontes, extrai as leituras e aplica a limpeza (Fase 3). Nada é
-    gravado no banco ainda (Fase 4).
+    Baixa as fontes, guarda a resposta original (camada `bruto`), limpa e grava as
+    leituras (camada `dados`). Rodar de novo não duplica nada.
 
     | Fonte | O que vem | Unidade |
     |---|---|---|
-    | **ANA, telemetria** | Leituras de 15 min a 1 h por estação | cm, horário de Brasília |
+    | **ANA, telemetria** | Leituras de 15 min a 1 h (histórico ~2011) | cm, hora de Brasília |
     | **Porto de Manaus** | Uma leitura por dia, digitada à mão | m, sem horário |
 
-    **Amostras salvas** usa os arquivos de teste e não acessa a internet. **Ao vivo**
-    consulta as fontes (no máximo 1 vez por hora). Rodando como script, a coleta é
-    sempre ao vivo.
+    **Como script** (agendado de hora em hora), coleta os últimos dias e grava:
+
+    ```bash
+    uv run python notebooks/coleta.py                       # padrão: 2 dias, grava
+    uv run python notebooks/coleta.py -- --inicio 2024-01-01 --fim 2024-12-31 \
+        --fontes ana --pausa 5                               # carga histórica
+    uv run python notebooks/coleta.py -- --help
+    ```
     """)
     return
 
 
 @app.cell
-def _(mo):
-    origem = mo.ui.radio(
-        options=["Amostras salvas", "Ao vivo"], value="Amostras salvas", label="Origem dos dados"
-    )
-    botao = mo.ui.run_button(label="Coletar ao vivo")
-    mo.hstack([origem, botao], justify="start", gap=2)
-    return botao, origem
-
-
-@app.cell
-def _(mo, origem):
-    como_script = mo.app_meta().mode == "script"
-    ao_vivo = como_script or origem.value == "Ao vivo"
-    return (ao_vivo,)
-
-
-@app.cell
-def _(mo):
+def _():
     from collections import Counter
+    from dataclasses import dataclass, fields
     from datetime import date, timedelta
 
     import httpx
 
-    from rios.banco import conectar_coletor, estacoes_ativas, faixas_historicas
-    from rios.fontes import ana, porto
-    from rios.fontes.http import TIMEOUT_SECONDS, USER_AGENT, baixar
-    from rios.limpeza import FUSO_MANAUS, limpar_ana, limpar_porto
+    from rios import banco, coleta
+    from rios.fontes.http import TIMEOUT_SECONDS, USER_AGENT
+    from rios.limpeza import FUSO_MANAUS
 
-    with conectar_coletor() as conn:
-        estacoes = estacoes_ativas(conn)
-        faixas = faixas_historicas(conn)
+    @dataclass(frozen=True)
+    class Parametros:
+        """Run settings, from the form (editor) or from the CLI (script)."""
 
-    nomes = {estacao.codigo_ana: estacao.nome for estacao in estacoes}
-    amostras = mo.notebook_dir().parent / "tests" / "fixtures"
+        inicio: date
+        fim: date
+        fontes: tuple[str, ...] = ("ana", "porto")
+        estacoes: tuple[str, ...] = ()  # empty = all active stations
+        pausa: float = 0.0  # seconds between ANA requests (use > 0 for backfills)
+        gravar: bool = True
+
+    AJUDA = {
+        "inicio": "Primeiro dia (AAAA-MM-DD). Padrão: ontem.",
+        "fim": "Último dia (AAAA-MM-DD). Padrão: hoje.",
+        "fontes": "ana, porto ou ana,porto. Padrão: ana,porto.",
+        "estacoes": "Códigos ANA separados por vírgula. Padrão: todas as ativas.",
+        "pausa": "Segundos entre consultas à ANA. Padrão: 0.",
+        "gravar": "true/false. Padrão: true.",
+    }
     return (
+        AJUDA,
         Counter,
         FUSO_MANAUS,
+        Parametros,
         TIMEOUT_SECONDS,
         USER_AGENT,
-        amostras,
-        ana,
-        baixar,
+        banco,
+        coleta,
         date,
-        estacoes,
-        faixas,
+        fields,
         httpx,
-        limpar_ana,
-        limpar_porto,
-        nomes,
-        porto,
         timedelta,
     )
+
+
+@app.cell
+def _(banco):
+    with banco.conectar_coletor() as conexao_leitura:
+        estacoes = banco.estacoes_ativas(conexao_leitura)
+        faixas = banco.faixas_historicas(conexao_leitura)
+    nomes = {estacao.codigo_ana: estacao.nome for estacao in estacoes}
+    return estacoes, faixas, nomes
+
+
+@app.cell
+def _(date, estacoes, mo, timedelta):
+    formulario = (
+        mo.md("""
+        **Período:** {inicio} até {fim}
+
+        **Fontes:** {fontes} &nbsp; **Estações:** {estacoes}
+
+        **Pausa entre consultas (s):** {pausa} &nbsp; {gravar}
+        """)
+        .batch(
+            inicio=mo.ui.date(value=date.today() - timedelta(days=1)),
+            fim=mo.ui.date(value=date.today()),
+            fontes=mo.ui.multiselect(options=["ana", "porto"], value=["ana", "porto"]),
+            estacoes=mo.ui.multiselect(
+                options={f"{e.rio} · {e.nome}": e.codigo_ana for e in estacoes},
+                label="",
+            ),
+            pausa=mo.ui.number(start=0, stop=60, step=1, value=0),
+            gravar=mo.ui.checkbox(label="Gravar no banco", value=False),
+        )
+        .form(submit_button_label="Coletar ao vivo")
+    )
+    formulario
+    return (formulario,)
+
+
+@app.cell
+def _(AJUDA, Parametros, date, fields, formulario, mo, timedelta):
+    como_script = mo.app_meta().mode == "script"
+
+    def parametros_da_cli(argumentos: dict) -> Parametros:
+        def lista(valor: object) -> tuple[str, ...]:
+            return tuple(item.strip() for item in str(valor).split(",") if item.strip())
+
+        ontem = date.today() - timedelta(days=1)
+        return Parametros(
+            inicio=date.fromisoformat(str(argumentos.get("inicio", ontem))),
+            fim=date.fromisoformat(str(argumentos.get("fim", date.today()))),
+            fontes=lista(argumentos.get("fontes", "ana,porto")),
+            estacoes=lista(argumentos.get("estacoes", "")),
+            pausa=float(argumentos.get("pausa", 0)),
+            gravar=str(argumentos.get("gravar", "true")).lower() != "false",
+        )
+
+    if como_script and "help" in mo.cli_args():
+        print("Uso: uv run python notebooks/coleta.py -- [--opção valor ...]\n")
+        for campo in fields(Parametros):
+            print(f"  --{campo.name:10s} {AJUDA[campo.name]}")
+        raise SystemExit(0)
+
+    if como_script:
+        parametros = parametros_da_cli(mo.cli_args())
+    else:
+        mo.stop(formulario.value is None, mo.md("_Ajuste e clique em **Coletar ao vivo**._"))
+        parametros = Parametros(
+            inicio=formulario.value["inicio"],
+            fim=formulario.value["fim"],
+            fontes=tuple(formulario.value["fontes"]),
+            estacoes=tuple(formulario.value["estacoes"]),
+            pausa=float(formulario.value["pausa"]),
+            gravar=formulario.value["gravar"],
+        )
+    return (parametros,)
 
 
 @app.cell
 def _(
     TIMEOUT_SECONDS,
     USER_AGENT,
-    amostras,
-    ana,
-    ao_vivo,
-    baixar,
-    botao,
-    date,
+    banco,
+    coleta,
     estacoes,
+    faixas,
     httpx,
-    mo,
-    porto,
-    timedelta,
+    parametros,
 ):
-    mo.stop(
-        ao_vivo and not botao.value and mo.app_meta().mode != "script",
-        mo.md("_Clique em **Coletar ao vivo**._"),
-    )
-
-    def coletar_ao_vivo() -> tuple[list, list, list, str | None]:
-        brutas_ana, resumo = [], []
-        hoje = date.today()
-        with httpx.Client(headers={"User-Agent": USER_AGENT}, timeout=TIMEOUT_SECONDS) as cliente:
-            for estacao in estacoes:
-                url = ana.url_dados(estacao.codigo_ana, hoje - timedelta(days=1), hoje)
-                try:
-                    resposta = baixar(url, cliente)
-                    if not resposta.ok:
-                        raise ana.RespostaAnaInvalida(f"HTTP {resposta.status_http}")
-                    extraidas = ana.extrair(resposta.conteudo)
-                    status = "ok"
-                except (httpx.HTTPError, ana.RespostaAnaInvalida) as erro:
-                    extraidas, status = [], f"falha: {erro}"
-                brutas_ana.extend(extraidas)
-                resumo.append({"estação": estacao.nome, "rio": estacao.rio, "status": status})
-            try:
-                resposta_porto = baixar(porto.URL, cliente)
-                linhas = porto.extrair(resposta_porto.conteudo)
-                erro_porto = None
-            except (httpx.HTTPError, porto.PaginaPortoInvalida) as erro:
-                linhas, erro_porto = [], str(erro)
-        return brutas_ana, resumo, linhas, erro_porto
-
-    def carregar_amostras() -> tuple[list, list, list, str | None]:
-        brutas_ana = ana.extrair((amostras / "ana_14990000_2026-10-20.xml").read_bytes())
-        linhas = porto.extrair((amostras / "porto_manaus_2026-10-20.html").read_bytes())
-        resumo = [{"estação": "Manaus", "rio": "Negro", "status": "amostra salva"}]
-        return brutas_ana, resumo, linhas, None
-
-    brutas_ana, resumo_coleta, linhas_porto, erro_porto = (
-        coletar_ao_vivo() if ao_vivo else carregar_amostras()
-    )
-    return brutas_ana, erro_porto, linhas_porto, resumo_coleta
+    selecionadas = [
+        e for e in estacoes if not parametros.estacoes or e.codigo_ana in parametros.estacoes
+    ]
+    conexao = banco.conectar_coletor() if parametros.gravar else None
+    with httpx.Client(headers={"User-Agent": USER_AGENT}, timeout=TIMEOUT_SECONDS) as cliente:
+        resultados = []
+        if "ana" in parametros.fontes:
+            resultados.append(
+                coleta.coletar_ana(
+                    cliente,
+                    selecionadas,
+                    parametros.inicio,
+                    parametros.fim,
+                    conn=conexao,
+                    faixas=faixas,
+                    pausa_segundos=parametros.pausa,
+                )
+            )
+        if "porto" in parametros.fontes:
+            resultados.append(coleta.coletar_porto(cliente, conn=conexao))
+    if conexao is not None:
+        brutos_apagados = banco.apagar_brutos_antigos(conexao)
+        conexao.close()
+    else:
+        brutos_apagados = 0
+    leituras = [leitura for resultado in resultados for leitura in resultado.leituras]
+    return brutos_apagados, leituras, resultados
 
 
 @app.cell
-def _(brutas_ana, faixas, limpar_ana, limpar_porto, linhas_porto):
-    leituras_ana = limpar_ana(brutas_ana, faixa_historica=faixas)
-    leituras_porto, lacunas_porto = limpar_porto(linhas_porto) if linhas_porto else ([], [])
-    leituras = leituras_ana + leituras_porto
-    return lacunas_porto, leituras, leituras_ana, leituras_porto
-
-
-@app.cell
-def _(Counter, leituras, mo):
+def _(Counter, leituras, mo, parametros, resultados):
     qualidade = Counter(leitura.qualidade for leitura in leituras)
-    mo.hstack(
+    mo.vstack(
         [
-            mo.stat(len(leituras), label="Leituras limpas"),
-            mo.stat(qualidade["ok"], label="OK"),
-            mo.stat(qualidade["corrigida"], label="Corrigidas"),
-            mo.stat(qualidade["suspeita"], label="Suspeitas"),
-        ],
-        justify="start",
-        gap=2,
+            mo.hstack(
+                [
+                    mo.stat(len(leituras), label="Leituras limpas"),
+                    mo.stat(
+                        sum(r.leituras_novas for r in resultados), label="Novas/alteradas no banco"
+                    ),
+                    mo.stat(qualidade["corrigida"], label="Corrigidas"),
+                    mo.stat(qualidade["suspeita"], label="Suspeitas"),
+                ],
+                justify="start",
+                gap=2,
+            ),
+            mo.md("" if parametros.gravar else "_Prévia: nada foi gravado no banco._"),
+        ]
     )
     return
 
 
 @app.cell
-def _(FUSO_MANAUS, leituras_ana, nomes):
-    def ultima_por_estacao(leituras: list) -> list[dict]:
-        ultimas = {}
-        for leitura in leituras:
-            if leitura.qualidade != "suspeita":
-                ultimas[leitura.estacao] = leitura
-        return [
-            {
-                "estação": nomes.get(codigo, codigo),
-                "cota (m)": float(leitura.cota_cm) / 100,
-                "horário (Manaus)": leitura.instante.astimezone(FUSO_MANAUS).strftime(
-                    "%d/%m %H:%M"
-                ),
-            }
-            for codigo, leitura in ultimas.items()
-        ]
-
-    situacao_atual = ultima_por_estacao(leituras_ana)
-    return (situacao_atual,)
-
-
-@app.cell
 def _(FUSO_MANAUS, leituras, nomes):
+    ultimas = {}
+    for leitura in leituras:
+        if leitura.qualidade != "suspeita" and leitura.fonte == "ana_telemetria":
+            ultimas[leitura.estacao] = leitura
+    situacao_atual = [
+        {
+            "estação": nomes.get(codigo, codigo),
+            "cota (m)": float(leitura.cota_cm) / 100,
+            "horário (Manaus)": leitura.instante.astimezone(FUSO_MANAUS).strftime("%d/%m %H:%M"),
+        }
+        for codigo, leitura in ultimas.items()
+    ]
     problemas = [
         {
             "estação": nomes.get(leitura.estacao, leitura.estacao),
@@ -204,27 +248,23 @@ def _(FUSO_MANAUS, leituras, nomes):
         for leitura in leituras
         if leitura.qualidade != "ok"
     ]
-    return (problemas,)
+    return problemas, situacao_atual
 
 
 @app.cell
-def _(
-    erro_porto,
-    lacunas_porto,
-    leituras_porto,
-    mo,
-    problemas,
-    resumo_coleta,
-    situacao_atual,
-):
-    porto_texto = (
-        mo.md(f"**Falha no Porto:** {erro_porto}")
-        if erro_porto
-        else mo.md(
-            f"{len(leituras_porto)} dias limpos; "
-            f"dias faltando: {', '.join(str(lacuna.dia) for lacuna in lacunas_porto) or 'nenhum'}."
-        )
-    )
+def _(brutos_apagados, mo, problemas, resultados, situacao_atual):
+    resumo_execucao = [
+        {
+            "fonte": r.fonte,
+            "coleta": r.coleta_id,
+            "status": r.status,
+            "consultas": r.consultas,
+            "novas/alteradas": r.leituras_novas,
+            "dias faltando": ", ".join(str(lacuna.dia) for lacuna in r.lacunas) or "—",
+            "falhas": "; ".join(r.falhas) or "—",
+        }
+        for r in resultados
+    ]
     mo.ui.tabs(
         {
             "Situação atual (ANA)": mo.ui.table(situacao_atual, selection=None),
@@ -234,49 +274,29 @@ def _(
                     mo.ui.table(problemas, selection=None),
                 ]
             ),
-            "Porto de Manaus": porto_texto,
-            "Coleta": mo.ui.table(resumo_coleta, selection=None),
+            "Execução": mo.vstack(
+                [
+                    mo.ui.table(resumo_execucao, selection=None),
+                    mo.md(f"Respostas brutas com mais de 90 dias apagadas: {brutos_apagados}."),
+                ]
+            ),
         }
     )
     return
 
 
 @app.cell
-def _(FUSO_MANAUS, leituras_ana, leituras_porto, mo):
-    # Cross-check: Porto vs ANA for Manaus on the same local day
-    ana_manaus = {
-        leitura.instante.astimezone(FUSO_MANAUS).date(): leitura.cota_cm
-        for leitura in leituras_ana
-        if leitura.estacao == "14990000" and leitura.qualidade != "suspeita"
-    }
-    conferencia = [
-        {
-            "dia": str(dia),
-            "Porto (m)": float(leitura.cota_cm) / 100,
-            "ANA (m)": float(ana_manaus[dia]) / 100,
-            "diferença (cm)": float(leitura.cota_cm - ana_manaus[dia]),
-        }
-        for leitura in leituras_porto
-        if (dia := leitura.instante.date()) in ana_manaus and leitura.cota_cm is not None
-    ]
-    mo.vstack(
-        [
-            mo.md("## Conferência Manaus: Porto × ANA"),
-            mo.ui.table(conferencia, selection=None)
-            if conferencia
-            else mo.md("_Sem dias em comum entre as duas fontes nesta coleta._"),
-        ]
-    )
-    return
-
-
-@app.cell
-def _(Counter, leituras, mo, resumo_coleta):
-    # Plain-text summary for script runs (cron/systemd logs)
+def _(Counter, leituras, mo, resultados):
+    # Plain-text summary for script runs (systemd journal)
     if mo.app_meta().mode == "script":
-        for item in resumo_coleta:
-            print(f"{item['estação']}: {item['status']}")
-        print(f"Qualidade: {dict(Counter(leitura.qualidade for leitura in leituras))}")
+        for resultado in resultados:
+            print(
+                f"{resultado.fonte}: {resultado.status}, coleta {resultado.coleta_id}, "
+                f"{resultado.leituras_novas} novas/alteradas, {len(resultado.falhas)} falhas"
+            )
+            for falha in resultado.falhas:
+                print(f"  falha: {falha}")
+        print(f"qualidade: {dict(Counter(leitura.qualidade for leitura in leituras))}")
     return
 
 

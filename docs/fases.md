@@ -6,7 +6,7 @@
 | 1 | Banco: esquema, usuários, estações, testes de permissão | ✅ Concluída (20/10/2026) |
 | 2 | Coletores ANA e Porto (baixar e extrair) | ✅ Concluída (20/10/2026) |
 | 3 | Limpeza + testes automatizados dos parsers | ✅ Concluída (20/10/2026) |
-| 4 | Gravação no banco + coleta de hora em hora + carga histórica | ⬜ Pendente |
+| 4 | Gravação no banco + coleta de hora em hora + carga histórica | 🟡 Em andamento (carga histórica pendente) |
 | 5 | Bot Telegram (/start, /nivel, /semana, /alertas, /parar) | ⬜ Pendente |
 | 6 | Boletim diário dos 4 rios com alertas de cota | ⬜ Pendente |
 | 7 | Painel marimo (montante→jusante, comparação entre anos, log) | ⬜ Pendente |
@@ -63,3 +63,21 @@
   conferência Porto × ANA em Manaus.
 - Coleta real (20/10/2026): 10 de 10 estações ok, 1.278 leituras limpas
   (1.276 ok, 2 corrigidas).
+
+## Fase 4 — registro (parcial)
+
+- `rios/banco.py`: abre/fecha a coleta, guarda a resposta original (gzip) em
+  `bruto.respostas`, faz upsert das leituras (conta só linhas novas ou alteradas)
+  e apaga respostas brutas com mais de 90 dias.
+- `rios/coleta.py`: uma coleta por fonte; consultas à ANA em blocos de até 31
+  dias, gravação estação por estação; falha isolada → status `parcial`.
+- Notebook `coleta.py` com o padrão da skill `marimo-batch`: os mesmos
+  parâmetros pelo formulário (editor, "Gravar no banco" desmarcado por padrão)
+  ou pela linha de comando (`-- --help`).
+- Agendamento: `deploy/systemd/rios-coleta.timer` de hora em hora (atraso
+  aleatório de até 5 min), instalado com `deploy/instalar.sh`. Unidades
+  versionadas no repositório e ligadas por symlink.
+- Primeira coleta real gravada (20/10/2026): ANA 1.105 leituras, Porto 173;
+  repetir não gravou nada novo. Banco com 8,7 MB.
+- 67 testes passando (+10 de coleta com HTTP falso e banco real, sem deixar dados).
+- Pendente: carga histórica da telemetria da ANA (disponível desde ~2011–2015).

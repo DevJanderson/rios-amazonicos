@@ -1,0 +1,10 @@
+[Unit]
+Description=Rios Amazônicos: hourly collection (ANA + Porto de Manaus)
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/projects/rios-amazonicos/coletor
+ExecStart=%h/.local/bin/uv run --frozen python notebooks/coleta.py
+TimeoutStartSec=20min
+Nice=10

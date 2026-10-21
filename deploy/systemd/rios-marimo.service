@@ -1,0 +1,12 @@
+[Unit]
+Description=marimo editor for rios-amazonicos notebooks (port 2719, Tailscale only)
+After=network-online.target
+
+[Service]
+WorkingDirectory=%h/projects/rios-amazonicos/coletor
+ExecStart=%h/.local/bin/uv run --frozen marimo edit notebooks --headless --host 0.0.0.0 --port 2719 --no-token
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
