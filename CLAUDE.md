@@ -96,7 +96,10 @@ HidroWeb (carga)┘        de hora em hora, idempotente          │
   Lint/format: `ruff`; tipos: `ty check`; testes: `pytest`.
 - n8n: `~/infra/n8n`, editor `http://nauraki:5678`, webhooks HTTPS em
   `https://flow.nauraki.com`. Não alterar sem perguntar.
-- marimo: serviço systemd `marimo.service`, porta 2718. Não alterar sem perguntar.
+- marimo: serviço systemd `marimo.service`, porta 2718 (rascunhos). Não alterar sem perguntar.
+- marimo do projeto: `rios-marimo.service` (systemd de usuário), `http://nauraki:2719`,
+  ambiente do projeto (`uv run`), pasta `coletor/notebooks`. Trabalho ao vivo com
+  `marimo pair --url http://127.0.0.1:2719`.
 
 ## Estrutura
 
