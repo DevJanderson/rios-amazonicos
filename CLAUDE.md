@@ -117,7 +117,7 @@ rios-amazonicos/
 │   ├── rios/            # pacote: fontes (ana, porto), limpeza, banco
 │   ├── notebooks/       # coleta.py e painel.py (marimo)
 │   └── tests/           # pytest + fixtures (XML da ANA, HTML do Porto)
-├── n8n/                 # workflows exportados (JSON)
+├── n8n/                 # workflow exportado (JSON) + importar.sh
 └── docs/
     ├── PRD.md           # requisitos do produto
     ├── dados.md         # dicionário de dados e cotas de referência
@@ -127,11 +127,11 @@ rios-amazonicos/
 ## Fases
 
 - [x] Fase 0: diagnóstico da VPS, estrutura, git
-- [ ] Fase 1: banco (esquema, usuários, estações, testes de permissão)
-- [ ] Fase 2: coletores ANA e Porto (baixar e extrair)
-- [ ] Fase 3: limpeza + testes automatizados dos parsers
-- [ ] Fase 4: gravação no banco + coleta de hora em hora + carga histórica
-- [ ] Fase 5: bot Telegram (/start, /nivel <cidade>, /semana, /alertas, /parar)
+- [x] Fase 1: banco (esquema, usuários, estações, testes de permissão)
+- [x] Fase 2: coletores ANA e Porto (baixar e extrair)
+- [x] Fase 3: limpeza + testes automatizados dos parsers
+- [x] Fase 4: gravação no banco + coleta de hora em hora + carga histórica
+- [x] Fase 5: bot Telegram (/start, /nivel <cidade>, /semana, /alertas, /parar)
 - [ ] Fase 6: boletim diário dos 4 rios com alertas de cota
 - [ ] Fase 7: painel (rios montante→jusante, comparação entre anos, log de coletas)
 - [ ] Fase 8: GitHub (README, CI, screenshots, guia de contribuição)

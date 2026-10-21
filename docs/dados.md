@@ -129,6 +129,24 @@ Chave única: `(estacao, instante, fonte)`.
 | `situacao_estacao` | Classificação atual: normal, atenção, alerta, inundação, inundação severa, seca |
 | `comparativo_anual` | Mesmo dia em anos anteriores e nos anos extremos |
 
+`analise.estacoes` também expõe `rio_id`, para ordenar os rios.
+
+### Funções do bot (`bot`, `db/init/04_bot.sql`)
+Só `rios_n8n` executa. Toda a regra do bot fica aqui; o n8n só repassa mensagens.
+
+| Função | Uso |
+|---|---|
+| `bot.responder(chat_id, texto)` | Resposta para qualquer mensagem (`/start`, `/nivel`, `/semana`, `/alertas`, `/parar`, `/boletim`, ajuda) |
+| `bot.boletim()` | Boletim diário dos 4 rios |
+| `bot.inscritos_ativos()` | Chats que recebem o boletim |
+| `bot.alertas_pendentes()` | (chat, estação, situação, mensagem) cuja situação mudou desde o último alerta |
+| `bot.marcar_alerta(chat_id, estacao, situacao)` | Registra o alerta enviado em `inscritos.ultimos_alertas` |
+
+Regras: busca de cidade sem acento e por prefixo; estação sem leitura há mais de
+3 dias aparece como "sem dados recentes" e não gera alerta; ao escolher estações
+em `/alertas`, a situação atual vira a base (não dispara alerta antigo);
+estações `sem_referencia` não geram alerta.
+
 ## 5. Estações
 
 | Rio | Ordem | Estação | Código ANA | UF |

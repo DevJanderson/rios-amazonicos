@@ -7,7 +7,7 @@
 | 2 | Coletores ANA e Porto (baixar e extrair) | ✅ Concluída (20/10/2026) |
 | 3 | Limpeza + testes automatizados dos parsers | ✅ Concluída (20/10/2026) |
 | 4 | Gravação no banco + coleta de hora em hora + carga histórica | ✅ Concluída (21/10/2026) |
-| 5 | Bot Telegram (/start, /nivel, /semana, /alertas, /parar) | ⬜ Pendente |
+| 5 | Bot Telegram (/start, /nivel, /semana, /alertas, /parar) | ✅ Concluída (21/10/2026) |
 | 6 | Boletim diário dos 4 rios com alertas de cota | ⬜ Pendente |
 | 7 | Painel marimo (montante→jusante, comparação entre anos, log) | ⬜ Pendente |
 | 8 | GitHub (README final, CI, screenshots, contribuição) | ⬜ Pendente |
@@ -88,3 +88,25 @@
 - Telemetria quase vazia: Parintins (3,5 mil, desde 07/2020), Coari (2,1 mil,
   09/2020–11/2024) e São Gabriel da Cachoeira (1,4 mil, 08/2020–11/2023).
 - Mínima de Manaus na telemetria: 12,11 m (a referência oficial é 12,13 m).
+
+## Fase 5 — registro
+
+- Regra do bot no banco (`db/init/04_bot.sql`, schema `bot`, só `rios_n8n`
+  executa): `responder`, `boletim`, `alertas_pendentes`, `marcar_alerta`,
+  `inscritos_ativos`. Busca de cidade sem acento e por prefixo; estação sem
+  leitura há mais de 3 dias aparece como "sem dados recentes".
+- n8n: um workflow só, `n8n/rios-amazonicos.json` ("Rios Amazônicos — bot,
+  boletim e alertas"), com três gatilhos: mensagem do Telegram, boletim diário
+  às 7h30 (Manaus) e alertas de hora em hora (:20). Importado com
+  `n8n/importar.sh` (credenciais a partir do `.env`, sem expor segredos).
+- Infra: containers do n8n renomeados (`n8n-app`, `n8n-postgres`); `n8n-app` na
+  rede `pg-projects-net`. Cloudflare Tunnel separado em `~/infra/cloudflared`
+  (`cloudflared-tunnel`, rede `cloudflared-net`), compartilhado entre projetos;
+  rota `flow.nauraki.com` → `http://n8n-app:5678`.
+- Telegram: o gatilho só funciona com o workflow publicado (o modo de teste do
+  n8n usa a URL http da Tailscale, que o Telegram recusa).
+- Teste real (21/10/2026): `/start` respondido, inscrição gravada.
+- 93 testes passando (+26 do bot).
+- Boletim e alertas (Fase 6) já estão no workflow; falta validar o primeiro
+  envio real e ajustar o texto se preciso.
+

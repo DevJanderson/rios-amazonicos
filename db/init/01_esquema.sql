@@ -91,7 +91,8 @@ CREATE INDEX IF NOT EXISTS respostas_recebido_em_idx ON bruto.respostas (recebid
 -- Leituras suspeitas ficam fora das views de consumo.
 
 CREATE OR REPLACE VIEW analise.estacoes AS
-SELECT e.codigo_ana, e.nome, e.municipio, e.uf, r.nome AS rio, e.ordem_no_rio, e.ativa
+SELECT e.codigo_ana, e.nome, e.municipio, e.uf, r.nome AS rio, e.ordem_no_rio, e.ativa,
+       e.rio_id
 FROM dados.estacoes e
 JOIN dados.rios r ON r.id = e.rio_id;
 

@@ -1,0 +1,309 @@
+{
+  "id": "riosBotTelegram1",
+  "name": "Rios Amazônicos — bot, boletim e alertas",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "name": "Mensagem recebida",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "e341ea0d-d1d0-4f6a-904a-c6c1a5627dad",
+      "credentials": {
+        "telegramApi": {
+          "id": "H0o6aGWwZLH9sCjF",
+          "name": "Telegram"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT bot.responder($1::bigint, $2::text) AS resposta",
+        "options": {
+          "queryReplacement": "={{ [ $json.message.chat.id, $json.message.text ?? '' ] }}"
+        }
+      },
+      "name": "Responder",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        240,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "riosPgN8nCred001",
+          "name": "Rios — Postgres (rios_n8n)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Mensagem recebida').item.json.message.chat.id }}",
+        "text": "={{ $json.resposta }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true
+        }
+      },
+      "name": "Enviar resposta",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        0
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "H0o6aGWwZLH9sCjF",
+          "name": "Telegram"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 7,
+              "triggerAtMinute": 30
+            }
+          ]
+        }
+      },
+      "name": "Todo dia 7h30 (Manaus)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT i AS chat_id, b.texto FROM bot.inscritos_ativos() i CROSS JOIN (SELECT bot.boletim() AS texto) b",
+        "options": {}
+      },
+      "name": "Boletim por inscrito",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        240,
+        240
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "riosPgN8nCred001",
+          "name": "Rios — Postgres (rios_n8n)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ $json.texto }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true
+        }
+      },
+      "name": "Enviar boletim",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        240
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "H0o6aGWwZLH9sCjF",
+          "name": "Telegram"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1,
+              "triggerAtMinute": 20
+            }
+          ]
+        }
+      },
+      "name": "De hora em hora (:20)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT chat_id, estacao, situacao, mensagem FROM bot.alertas_pendentes()",
+        "options": {}
+      },
+      "name": "Alertas pendentes",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        240,
+        480
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "riosPgN8nCred001",
+          "name": "Rios — Postgres (rios_n8n)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ $json.mensagem }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true
+        }
+      },
+      "name": "Enviar alerta",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        480
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "H0o6aGWwZLH9sCjF",
+          "name": "Telegram"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT bot.marcar_alerta($1::bigint, $2::text, $3::text)",
+        "options": {
+          "queryReplacement": "={{ [ $('Alertas pendentes').item.json.chat_id, $('Alertas pendentes').item.json.estacao, $('Alertas pendentes').item.json.situacao ] }}"
+        }
+      },
+      "name": "Marcar enviado",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        720,
+        480
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "riosPgN8nCred001",
+          "name": "Rios — Postgres (rios_n8n)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Mensagem recebida": {
+      "main": [
+        [
+          {
+            "node": "Responder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Responder": {
+      "main": [
+        [
+          {
+            "node": "Enviar resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Todo dia 7h30 (Manaus)": {
+      "main": [
+        [
+          {
+            "node": "Boletim por inscrito",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Boletim por inscrito": {
+      "main": [
+        [
+          {
+            "node": "Enviar boletim",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "De hora em hora (:20)": {
+      "main": [
+        [
+          {
+            "node": "Alertas pendentes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alertas pendentes": {
+      "main": [
+        [
+          {
+            "node": "Enviar alerta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar alerta": {
+      "main": [
+        [
+          {
+            "node": "Marcar enviado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Manaus"
+  },
+  "tags": [],
+  "pinData": {}
+}

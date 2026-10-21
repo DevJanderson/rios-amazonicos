@@ -27,7 +27,7 @@ psql_em() {
   cat "$RAIZ/db/init/00_banco_e_usuarios.sql"
 } | psql_em postgres
 
-for arquivo in 01_esquema.sql 02_permissoes.sql 03_carga_inicial.sql; do
+for arquivo in 01_esquema.sql 02_permissoes.sql 03_carga_inicial.sql 04_bot.sql; do
   psql_em "${RIOS_DB_NAME:-rios}" < "$RAIZ/db/init/$arquivo"
   echo "ok: $arquivo"
 done
