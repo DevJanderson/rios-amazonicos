@@ -18,8 +18,10 @@ from rios.fontes.http import Resposta
 from tests.conftest import Connect
 
 FIXTURES = Path(__file__).parent / "fixtures"
-ANA_XML = (FIXTURES / "ana_14990000_2026-10-20.xml").read_bytes()
-PORTO_HTML = (FIXTURES / "porto_manaus_2026-10-20.html").read_bytes()
+# Real captures moved to 1990 so they never collide with collected data in the database
+ANA_XML = (FIXTURES / "ana_14990000_2026-10-20.xml").read_bytes().replace(b"2026-", b"1990-")
+PORTO_HTML = (FIXTURES / "porto_manaus_2026-10-20.html").read_bytes().replace(b" 2026", b" 1990")
+DIA = date(1990, 10, 20)
 MANAUS = Estacao("14990000", "Manaus", "Negro", 3)
 BARCELOS = Estacao("14480002", "Barcelos", "Negro", 2)
 
@@ -76,9 +78,7 @@ def test_periods_split_long_ranges() -> None:
 
 def test_ana_run_writes_raw_and_clean_layers(conn: psycopg.Connection) -> None:
     cliente = cliente_falso({"14990000": (200, ANA_XML)})
-    resultado = coleta.coletar_ana(
-        cliente, [MANAUS], date(2026, 10, 20), date(2026, 10, 20), conn=conn
-    )
+    resultado = coleta.coletar_ana(cliente, [MANAUS], DIA, DIA, conn=conn)
     assert resultado.status == "sucesso"
     assert resultado.leituras_novas == 88
     assert contar(conn, resultado.coleta_id) == (88, 1)
@@ -91,7 +91,7 @@ def test_ana_run_writes_raw_and_clean_layers(conn: psycopg.Connection) -> None:
 
 def test_ana_run_is_idempotent(conn: psycopg.Connection) -> None:
     cliente = cliente_falso({"14990000": (200, ANA_XML)})
-    args = (cliente, [MANAUS], date(2026, 10, 20), date(2026, 10, 20))
+    args = (cliente, [MANAUS], DIA, DIA)
     primeira = coleta.coletar_ana(*args, conn=conn)
     segunda = coleta.coletar_ana(*args, conn=conn)
     assert primeira.leituras_novas == 88
@@ -99,16 +99,14 @@ def test_ana_run_is_idempotent(conn: psycopg.Connection) -> None:
     total = conn.execute(
         "SELECT count(*) FROM dados.leituras WHERE estacao = '14990000' "
         "AND fonte = 'ana_telemetria' "
-        "AND instante >= '2026-10-20 00:00-03' AND instante < '2026-10-21 00:00-03'"
+        "AND instante >= '1990-10-20 00:00-03' AND instante < '1990-10-21 00:00-03'"
     ).fetchone()
     assert total == (88,)
 
 
 def test_one_station_failing_makes_run_partial(conn: psycopg.Connection) -> None:
     cliente = cliente_falso({"14990000": (200, ANA_XML)})  # Barcelos gets 504
-    resultado = coleta.coletar_ana(
-        cliente, [BARCELOS, MANAUS], date(2026, 10, 20), date(2026, 10, 20), conn=conn
-    )
+    resultado = coleta.coletar_ana(cliente, [BARCELOS, MANAUS], DIA, DIA, conn=conn)
     assert resultado.status == "parcial"
     assert resultado.leituras_novas == 88
     assert status_coleta(conn, resultado.coleta_id)[0:3] == ("parcial", 88, True)
@@ -117,9 +115,7 @@ def test_one_station_failing_makes_run_partial(conn: psycopg.Connection) -> None
 
 
 def test_all_failing_is_a_failed_run(conn: psycopg.Connection) -> None:
-    resultado = coleta.coletar_ana(
-        cliente_falso({}), [MANAUS], date(2026, 10, 20), date(2026, 10, 20), conn=conn
-    )
+    resultado = coleta.coletar_ana(cliente_falso({}), [MANAUS], DIA, DIA, conn=conn)
     assert resultado.status == "falha"
     assert status_coleta(conn, resultado.coleta_id)[0] == "falha"
 
@@ -131,7 +127,7 @@ def test_porto_run_writes_corrected_values(conn: psycopg.Connection) -> None:
     assert resultado.leituras_novas == 173
     linha = conn.execute(
         "SELECT cota_cm, cota_original, qualidade FROM dados.leituras "
-        "WHERE fonte = 'porto_manaus' AND instante = '2026-06-06 00:00-04'"
+        "WHERE fonte = 'porto_manaus' AND instante = '1990-06-06 00:00-04'"
     ).fetchone()
     assert linha == (2812, "20.12", "corrigida")
 
