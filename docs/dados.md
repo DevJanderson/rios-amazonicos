@@ -13,9 +13,9 @@ fonte ─► bruto ─────────► dados ────────
 
 | Schema | Papel | Quem grava | Quem lê |
 |---|---|---|---|
-| `bruto` | Resposta original de cada coleta, retenção de 90 dias | `coletor` | `coletor` |
-| `dados` | Fonte da verdade, limpa e tipada | `coletor` (`inscritos`: `n8n_rios`) | `coletor` |
-| `analise` | Views de consumo | — | `n8n_rios`, `painel` |
+| `bruto` | Resposta original de cada coleta, retenção de 90 dias | `rios_coletor` | `rios_coletor` |
+| `dados` | Fonte da verdade, limpa e tipada | `rios_coletor` (`inscritos`: `rios_n8n`) | `rios_coletor` |
+| `analise` | Views de consumo | — | `rios_n8n`, `rios_leitura` |
 
 ## 2. Convenções
 

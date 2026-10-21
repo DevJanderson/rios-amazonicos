@@ -230,8 +230,8 @@ original), cotas de referência como dados versionados com fonte, unidade única
 
 Dicionário de dados completo: [`docs/dados.md`](dados.md).
 
-Usuários do banco: `coletor` (grava em `bruto` e `dados`), `n8n_rios` (lê
-`analise`, grava `inscritos` e marca notificado), `painel` (só lê `analise`).
+Usuários do banco: `rios_coletor` (grava em `bruto` e `dados`), `rios_n8n` (lê
+`analise`, grava `inscritos` e marca notificado), `rios_leitura` (só lê `analise`).
 
 ## 12. Metodologia
 

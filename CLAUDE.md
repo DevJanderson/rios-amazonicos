@@ -84,8 +84,8 @@ HidroWeb (carga)┘        de hora em hora, idempotente          │
   `ok`/`suspeita`/`corrigida` + motivo, nunca apagar o valor original; cotas de
   referência são dados (tipo, valor, fonte, data), nunca constantes no código.
 - Um usuário por serviço, permissão mínima:
-  `coletor` (grava `bruto` e `dados`), `n8n_rios` (lê `analise`, grava
-  `inscritos`, marca notificado), `painel` (só lê `analise`).
+  `rios_coletor` (grava `bruto` e `dados`), `rios_n8n` (lê `analise`, grava
+  `inscritos`, marca notificado), `rios_leitura` (só lê `analise`).
 - Dicionário de dados: `docs/dados.md` (atualizar junto com qualquer mudança
   de esquema).
 
