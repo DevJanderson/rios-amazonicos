@@ -269,6 +269,17 @@ $$;
 CREATE OR REPLACE FUNCTION bot.inscritos_ativos() RETURNS SETOF bigint
 LANGUAGE sql STABLE AS $$ SELECT chat_id FROM dados.inscritos WHERE ativo ORDER BY chat_id $$;
 
+-- Telegram answers 403 when the user blocked the bot or deleted the chat:
+-- stop sending to that chat (it comes back with /start)
+CREATE OR REPLACE FUNCTION bot.desativar_se_bloqueado(chat bigint, erro text) RETURNS boolean
+LANGUAGE sql AS $$
+    UPDATE dados.inscritos SET ativo = false
+    WHERE chat_id = chat
+      AND (erro ILIKE '%403%' OR erro ILIKE '%blocked%' OR erro ILIKE '%chat not found%'
+           OR erro ILIKE '%deactivated%')
+    RETURNING true
+$$;
+
 -- Only rios_n8n runs the bot
 REVOKE ALL ON SCHEMA bot FROM PUBLIC;
 REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA bot FROM PUBLIC;

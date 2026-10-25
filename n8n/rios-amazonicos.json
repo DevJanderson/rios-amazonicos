@@ -132,7 +132,7 @@
           "name": "Telegram"
         }
       },
-      "onError": "continueRegularOutput"
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -219,6 +219,50 @@
           "name": "Rios — Postgres (rios_n8n)"
         }
       }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT bot.desativar_se_bloqueado($1::bigint, $2::text) AS desativado",
+        "options": {
+          "queryReplacement": "={{ [ $('Boletim por inscrito').item.json.chat_id, JSON.stringify($json) ] }}"
+        }
+      },
+      "name": "Desativar bloqueado (boletim)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        720,
+        360
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "riosPgN8nCred001",
+          "name": "Rios — Postgres (rios_n8n)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT bot.desativar_se_bloqueado($1::bigint, $2::text) AS desativado",
+        "options": {
+          "queryReplacement": "={{ [ $('Alertas pendentes').item.json.chat_id, JSON.stringify($json) ] }}"
+        }
+      },
+      "name": "Desativar bloqueado (alerta)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        720,
+        600
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "riosPgN8nCred001",
+          "name": "Rios — Postgres (rios_n8n)"
+        }
+      }
     }
   ],
   "connections": {
@@ -293,6 +337,25 @@
         [
           {
             "node": "Marcar enviado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Desativar bloqueado (alerta)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar boletim": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Desativar bloqueado (boletim)",
             "type": "main",
             "index": 0
           }

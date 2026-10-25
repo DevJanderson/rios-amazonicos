@@ -141,6 +141,7 @@ Só `rios_n8n` executa. Toda a regra do bot fica aqui; o n8n só repassa mensage
 | `bot.inscritos_ativos()` | Chats que recebem o boletim |
 | `bot.alertas_pendentes()` | (chat, estação, situação, mensagem) cuja situação mudou desde o último alerta |
 | `bot.marcar_alerta(chat_id, estacao, situacao)` | Registra o alerta enviado em `inscritos.ultimos_alertas` |
+| `bot.desativar_se_bloqueado(chat_id, erro)` | Desativa o inscrito quando o Telegram recusa o envio (bloqueio, chat inexistente, conta desativada) |
 
 Regras: busca de cidade sem acento e por prefixo; estação sem leitura há mais de
 3 dias aparece como "sem dados recentes" e não gera alerta; ao escolher estações

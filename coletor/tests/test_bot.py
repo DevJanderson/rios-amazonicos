@@ -162,3 +162,19 @@ def test_only_n8n_runs_the_bot(connect: Connect, user: str) -> None:
     conn = connect(user)
     with pytest.raises(psycopg.errors.InsufficientPrivilege):
         conn.execute("SELECT bot.boletim()")
+
+
+@pytest.mark.parametrize(
+    ("erro", "desativa"),
+    [
+        ("Forbidden: bot was blocked by the user", True),
+        ("403 - Forbidden: user is deactivated", True),
+        ("400 - Bad Request: chat not found", True),
+        ("429 - Too Many Requests: retry after 5", False),
+        ("ETIMEDOUT", False),
+    ],
+)
+def test_blocked_chat_is_deactivated(n8n: psycopg.Connection, erro: str, desativa: bool) -> None:
+    responder(n8n, "/start")
+    n8n.execute("SELECT bot.desativar_se_bloqueado(%s, %s)", (CHAT, erro))
+    assert inscrito(n8n)[0] is (not desativa)

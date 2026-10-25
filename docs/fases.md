@@ -8,7 +8,7 @@
 | 3 | Limpeza + testes automatizados dos parsers | ✅ Concluída (20/10/2026) |
 | 4 | Gravação no banco + coleta de hora em hora + carga histórica | ✅ Concluída (21/10/2026) |
 | 5 | Bot Telegram (/start, /nivel, /semana, /alertas, /parar) | ✅ Concluída (21/10/2026) |
-| 6 | Boletim diário dos 4 rios com alertas de cota | ⬜ Pendente |
+| 6 | Boletim diário dos 4 rios com alertas de cota | ✅ Concluída (25/10/2026) |
 | 7 | Painel marimo (montante→jusante, comparação entre anos, log) | ⬜ Pendente |
 | 8 | GitHub (README final, CI, screenshots, contribuição) | ⬜ Pendente |
 
@@ -109,4 +109,16 @@
 - 93 testes passando (+26 do bot).
 - Boletim e alertas (Fase 6) já estão no workflow; falta validar o primeiro
   envio real e ajustar o texto se preciso.
+
+## Fase 6 — registro
+
+- Boletim diário às 7h30 (Manaus) e alertas de hora em hora (:20) no workflow
+  único do n8n.
+- Quem bloqueia o bot é desativado: os nós de envio seguem pela saída de erro
+  para `bot.desativar_se_bloqueado` (erro 403, blocked, chat not found,
+  deactivated); os demais inscritos continuam recebendo.
+- Teste real de alerta (21/10/2026, 18:20): mensagem enviada e marcada, sem
+  repetição.
+- Boletim automático conferido em 22, 23, 24 e 25/10/2026, todos com sucesso.
+- 98 testes passando.
 
