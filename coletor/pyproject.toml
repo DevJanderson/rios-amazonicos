@@ -6,8 +6,10 @@ readme = "../README.md"
 license = "MIT"
 requires-python = ">=3.13"
 dependencies = [
+    "altair>=6.3.0",
     "httpx>=0.28.1",
     "marimo>=0.25.2",
+    "pandas>=3.0.6",
     "psycopg[binary]>=3.3.6",
     "selectolax>=1.0.1",
 ]

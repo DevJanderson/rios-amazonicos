@@ -24,6 +24,11 @@ def conectar_coletor() -> psycopg.Connection:
     return psycopg.connect(dsn("rios_coletor", "RIOS_COLETOR_PASSWORD"))
 
 
+def conectar_leitura() -> psycopg.Connection:
+    """Read-only user (schema analise): dashboard and ad hoc analysis."""
+    return psycopg.connect(dsn("rios_leitura", "RIOS_LEITURA_PASSWORD"))
+
+
 def estacoes_ativas(conn: psycopg.Connection) -> list[Estacao]:
     linhas = conn.execute(
         "SELECT codigo_ana, nome, rio, ordem_no_rio FROM analise.estacoes "

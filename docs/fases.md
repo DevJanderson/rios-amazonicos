@@ -9,7 +9,7 @@
 | 4 | Gravação no banco + coleta de hora em hora + carga histórica | ✅ Concluída (21/10/2026) |
 | 5 | Bot Telegram (/start, /nivel, /semana, /alertas, /parar) | ✅ Concluída (21/10/2026) |
 | 6 | Boletim diário dos 4 rios com alertas de cota | ✅ Concluída (25/10/2026) |
-| 7 | Painel marimo (montante→jusante, comparação entre anos, log) | ⬜ Pendente |
+| 7 | Painel marimo (montante→jusante, comparação entre anos, log) | ✅ Concluída (25/10/2026) |
 | 8 | GitHub (README final, CI, screenshots, contribuição) | ⬜ Pendente |
 
 ## Fase 0 — registro
@@ -122,3 +122,13 @@
 - Boletim automático conferido em 22, 23, 24 e 25/10/2026, todos com sucesso.
 - 98 testes passando.
 
+## Fase 7 — registro
+
+- Painel `coletor/notebooks/painel.py` (marimo, só leitura como `rios_leitura`):
+  situação atual, rios da nascente para a foz, comparação entre anos com cotas
+  de referência do SGB, coletas dos últimos 30 dias e qualidade dos dados.
+- Gráficos com altair, rótulos e números em pt-BR. Aberto em
+  `http://nauraki:2719` (`rios-marimo.service`).
+- Views novas: `analise.coletas_recentes` e `analise.qualidade_mensal`.
+- Revisão das suspeitas de Humaitá: a regra de saltos está correta; o padrão
+  ficou registrado em `docs/dados.md` (problemas conhecidos por estação).

@@ -167,3 +167,20 @@ SELECT estacao,
        to_char(dia, 'MM-DD')       AS mes_dia,
        cota_cm
 FROM analise.leituras_diarias;
+
+-- Collection log for the dashboard (last 30 days; raw errors included)
+CREATE OR REPLACE VIEW analise.coletas_recentes AS
+SELECT id, fonte, inicio, fim, status, leituras_novas, erro
+FROM dados.coletas
+WHERE inicio >= now() - interval '30 days';
+
+-- Reading quality per station and month (suspicious readings are kept, only counted)
+CREATE OR REPLACE VIEW analise.qualidade_mensal AS
+SELECT estacao,
+       date_trunc('month', instante AT TIME ZONE 'America/Manaus')::date AS mes,
+       fonte,
+       count(*) FILTER (WHERE qualidade = 'ok')        AS ok,
+       count(*) FILTER (WHERE qualidade = 'corrigida') AS corrigidas,
+       count(*) FILTER (WHERE qualidade = 'suspeita')  AS suspeitas
+FROM dados.leituras
+GROUP BY 1, 2, 3;

@@ -128,6 +128,8 @@ Chave única: `(estacao, instante, fonte)`.
 | `leituras_diarias` | Um valor por estação por dia |
 | `situacao_estacao` | Classificação atual: normal, atenção, alerta, inundação, inundação severa, seca |
 | `comparativo_anual` | Mesmo dia em anos anteriores e nos anos extremos |
+| `coletas_recentes` | Coletas dos últimos 30 dias (fonte, status, leituras gravadas) |
+| `qualidade_mensal` | Leituras ok, corrigidas e suspeitas por estação, mês e fonte |
 
 `analise.estacoes` também expõe `rio_id`, para ordenar os rios.
 
@@ -162,6 +164,16 @@ estações `sem_referencia` não geram alerta.
 | Madeira | 2 | Humaitá | 15630000 | AM |
 | Amazonas | 1 | Itacoatiara | 16030000 | AM |
 | Amazonas | 2 | Parintins | 16350002 | AM |
+
+### Problemas conhecidos por estação
+
+- **Humaitá (15630000)**: de 11/2016 a 07/2023, a telemetria tem cerca de
+  duas leituras isoladas por dia que ficam 60 a 75 cm abaixo das vizinhas e
+  voltam ao normal 15 minutos depois (ex.: 04/05/2021, 2239 → 2164 → 2239 cm).
+  Elas aparecem às 7h00 e às 17h00 de Brasília (até 12/2016, às 6h00 e às
+  16h00). A regra de saltos marca essas leituras como `suspeita`: são 531 na
+  carga histórica. Hipótese não confirmada: o sinal da leitura manual na régua,
+  feita nesses horários, entra na série com outro zero de referência.
 
 ## 6. Cotas de referência (levantamento de 20/10/2026, em metros)
 
