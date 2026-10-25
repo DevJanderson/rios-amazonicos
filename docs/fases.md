@@ -10,7 +10,7 @@
 | 5 | Bot Telegram (/start, /nivel, /semana, /alertas, /parar) | ✅ Concluída (21/10/2026) |
 | 6 | Boletim diário dos 4 rios com alertas de cota | ✅ Concluída (25/10/2026) |
 | 7 | Painel marimo (montante→jusante, comparação entre anos, log) | ✅ Concluída (25/10/2026) |
-| 8 | GitHub (README final, CI, screenshots, contribuição) | ⬜ Pendente |
+| 8 | GitHub (README final, CI, screenshots, contribuição) | ✅ Concluída (25/10/2026) |
 
 ## Fase 0 — registro
 
@@ -132,3 +132,15 @@
 - Views novas: `analise.coletas_recentes` e `analise.qualidade_mensal`.
 - Revisão das suspeitas de Humaitá: a regra de saltos está correta; o padrão
   ficou registrado em `docs/dados.md` (problemas conhecidos por estação).
+
+## Fase 8 — registro
+
+- README final com capturas do painel (`docs/img/`), arquitetura e como rodar;
+  guia de contribuição em `CONTRIBUTING.md`.
+- CI no GitHub Actions (`.github/workflows/ci.yml`): ruff, ty, marimo check,
+  shellcheck e pytest num PostgreSQL 17 vazio, com o esquema aplicado por
+  `db/aplicar.sh` (`PG_CONTAINER=""`) e a carga mínima
+  `coletor/tests/fixtures/dados_ci.sql`.
+- Testes de banco passam a aceitar conexão por variáveis `RIOS_*` (sem `.env`).
+- CI simulado na VPS num PostgreSQL descartável: 98 testes passando. A primeira
+  execução no GitHub depende do push.

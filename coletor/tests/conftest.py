@@ -16,9 +16,11 @@ USERS = {
 
 @pytest.fixture(scope="session")
 def env() -> dict[str, str]:
-    if not ENV_FILE.exists():
-        pytest.skip(f"{ENV_FILE} not found")
-    return carregar_env(ENV_FILE)
+    """Settings from .env or RIOS_* environment variables (used in CI)."""
+    env = carregar_env(ENV_FILE)
+    if "RIOS_DB_HOST" not in env:
+        pytest.skip(f"no database configured ({ENV_FILE} or RIOS_* variables)")
+    return env
 
 
 Connect = Callable[[str], psycopg.Connection]

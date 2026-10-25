@@ -134,7 +134,7 @@ rios-amazonicos/
 - [x] Fase 5: bot Telegram (/start, /nivel <cidade>, /semana, /alertas, /parar)
 - [x] Fase 6: boletim diário dos 4 rios com alertas de cota
 - [x] Fase 7: painel (rios montante→jusante, comparação entre anos, log de coletas)
-- [ ] Fase 8: GitHub (README, CI, screenshots, guia de contribuição)
+- [x] Fase 8: GitHub (README, CI, screenshots, guia de contribuição)
 
 ## Regras de trabalho
 

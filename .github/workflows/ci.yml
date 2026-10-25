@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: coletor
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Throwaway passwords for the CI database only.
+      RIOS_DB_HOST: localhost
+      RIOS_DB_PORT: "5432"
+      RIOS_DB_NAME: rios
+      RIOS_COLETOR_PASSWORD: ci-coletor
+      RIOS_N8N_PASSWORD: ci-n8n
+      RIOS_LEITURA_PASSWORD: ci-leitura
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Instalar dependências
+        run: uv sync --locked
+
+      - name: Lint e formatação (ruff)
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+
+      - name: Tipos (ty)
+        run: uv run ty check
+
+      - name: Notebooks (marimo check)
+        run: uv run marimo check notebooks/*.py
+
+      - name: Shell scripts (shellcheck)
+        working-directory: .
+        run: shellcheck db/aplicar.sh n8n/importar.sh deploy/instalar.sh
+
+      - name: Criar banco de teste
+        working-directory: .
+        run: |
+          PG_CONTAINER="" bash db/aplicar.sh
+          psql -d rios -v ON_ERROR_STOP=1 -q -f coletor/tests/fixtures/dados_ci.sql
+
+      - name: Testes (pytest)
+        run: uv run pytest -q

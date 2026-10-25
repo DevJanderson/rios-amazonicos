@@ -2,22 +2,29 @@
 # Aplica db/init/*.sql na instância pg-projects. Idempotente: pode rodar de novo.
 # Senhas vêm do .env do projeto e entram pelo stdin do psql (não aparecem na
 # linha de comando).
+# Sem container (PG_CONTAINER=""), usa o psql local com PGHOST/PGUSER etc. (CI).
 set -euo pipefail
 
 RAIZ="$(cd "$(dirname "$0")/.." && pwd)"
-CONTAINER="${PG_CONTAINER:-pg-projects}"
+CONTAINER="${PG_CONTAINER-pg-projects}"
 
-set -a
-# shellcheck source=/dev/null
-source "$RAIZ/.env"
-set +a
+if [ -f "$RAIZ/.env" ]; then
+  set -a
+  # shellcheck source=/dev/null
+  source "$RAIZ/.env"
+  set +a
+fi
 
 : "${RIOS_COLETOR_PASSWORD:?defina no .env}"
 : "${RIOS_N8N_PASSWORD:?defina no .env}"
 : "${RIOS_LEITURA_PASSWORD:?defina no .env}"
 
 psql_em() {
-  docker exec -i -e PGOPTIONS="-c client_min_messages=warning" "$CONTAINER" psql -U postgres -d "$1" -v ON_ERROR_STOP=1 -q
+  if [ -n "$CONTAINER" ]; then
+    docker exec -i -e PGOPTIONS="-c client_min_messages=warning" "$CONTAINER" psql -U postgres -d "$1" -v ON_ERROR_STOP=1 -q
+  else
+    PGOPTIONS="-c client_min_messages=warning" psql -d "$1" -v ON_ERROR_STOP=1 -q
+  fi
 }
 
 {

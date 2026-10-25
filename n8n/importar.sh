@@ -41,9 +41,7 @@ else
   echo "ok: credencial do Postgres (TELEGRAM_BOT_TOKEN ausente: Telegram fica para depois)"
 fi
 
-for arquivo in rios-amazonicos.json; do
-  docker exec -i "$CONTAINER" sh -c \
-    'f=$(mktemp); cat > "$f"; n8n import:workflow --input="$f"; s=$?; rm -f "$f"; exit $s' \
-    < "$RAIZ/n8n/$arquivo"
-  echo "ok: $arquivo"
-done
+docker exec -i "$CONTAINER" sh -c \
+  'f=$(mktemp); cat > "$f"; n8n import:workflow --input="$f"; s=$?; rm -f "$f"; exit $s' \
+  < "$RAIZ/n8n/rios-amazonicos.json"
+echo "ok: rios-amazonicos.json"
